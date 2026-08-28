@@ -3,8 +3,13 @@ import sys
 import json
 import time
 import threading
+import webbrowser
+import requests
 import webview
 from lcu_core import LCUAutoPilot, get_config_path
+
+CURRENT_VERSION = "1.0.0"
+GITHUB_REPO = "broadday0909/LolAutoPilot"
 
 # Resolve base dir for PyInstaller
 if getattr(sys, 'frozen', False):
@@ -20,6 +25,7 @@ class JSApi:
 
     def get_initial_data(self):
         return {
+            "version": CURRENT_VERSION,
             "config": pilot.config,
             "champions": pilot.champions_map,
             "connected": pilot.is_connected,
@@ -29,6 +35,44 @@ class JSApi:
             "mastery": pilot.get_top_masteries(6) if pilot.is_connected else [],
             "logs": self.logs.copy()
         }
+
+    def check_for_updates(self):
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+            headers = {"User-Agent": "LoLAutoPilot-App"}
+            resp = requests.get(url, headers=headers, timeout=4)
+            if resp.status_code == 200:
+                data = resp.json()
+                tag = data.get("tag_name", "").lstrip("vV").strip()
+                curr = CURRENT_VERSION.lstrip("vV").strip()
+                
+                def parse_v(v):
+                    p = []
+                    for x in v.split('.'):
+                        try:
+                            p.append(int(x))
+                        except ValueError:
+                            p.append(0)
+                    return p
+                
+                has_update = parse_v(tag) > parse_v(curr)
+                return {
+                    "has_update": has_update,
+                    "current_version": CURRENT_VERSION,
+                    "latest_version": data.get("tag_name", tag),
+                    "release_url": data.get("html_url", f"https://github.com/{GITHUB_REPO}/releases"),
+                    "release_notes": data.get("body", "")
+                }
+        except Exception as e:
+            return {"has_update": False, "error": str(e), "current_version": CURRENT_VERSION}
+        return {"has_update": False, "current_version": CURRENT_VERSION}
+
+    def open_url(self, url):
+        try:
+            webbrowser.open(url)
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def save_config(self, new_config):
         pilot.config.update(new_config)
@@ -799,6 +843,88 @@ HTML_CONTENT = r"""<!DOCTYPE html>
       color: #64748b;
       font-weight: 600;
     }
+
+    /* Update Notification Banner */
+    .update-banner {
+      background: linear-gradient(135deg, rgba(0, 242, 96, 0.12), rgba(0, 242, 254, 0.08));
+      border: 1px solid rgba(0, 242, 96, 0.4);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0, 242, 96, 0.15);
+      animation: fadeInDown 0.3s ease;
+    }
+
+    .update-banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .update-icon {
+      font-size: 24px;
+    }
+
+    .update-text {
+      flex: 1;
+    }
+
+    .update-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #00f260;
+      margin-bottom: 2px;
+    }
+
+    .update-subtitle {
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+
+    .update-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-update-now {
+      background: linear-gradient(135deg, #00f260, #0575e6);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 242, 96, 0.3);
+      transition: all var(--transition-fast);
+    }
+
+    .btn-update-now:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 242, 96, 0.45);
+    }
+
+    .btn-update-close {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      border: none;
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-update-close:hover {
+      background: rgba(255, 75, 75, 0.2);
+      color: #ff4b4b;
+    }
   </style>
 </head>
 <body>
@@ -863,6 +989,21 @@ HTML_CONTENT = r"""<!DOCTYPE html>
       <div class="status-pill">
         <div class="status-dot" id="statusDot"></div>
         <span id="headerStatusText">🔴 İstemci Bekleniyor</span>
+      </div>
+    </div>
+
+    <!-- Update Notification Banner (Hidden by default) -->
+    <div id="updateBanner" class="update-banner" style="display: none;">
+      <div class="update-banner-content">
+        <span class="update-icon">🚀</span>
+        <div class="update-text">
+          <div class="update-title" id="updateBannerTitle">Yeni Sürüm Mevcut! (v1.0.1)</div>
+          <div class="update-subtitle" id="updateBannerSubtitle">LoL AutoPilot PRO için yeni bir güncelleme yayınlandı.</div>
+        </div>
+        <div class="update-actions">
+          <button class="btn-update-now" id="btnUpdateNow" onclick="openReleasePage()">📥 Hemen İndir</button>
+          <button class="btn-update-close" onclick="closeUpdateBanner()">✕</button>
+        </div>
       </div>
     </div>
 
@@ -1112,9 +1253,9 @@ HTML_CONTENT = r"""<!DOCTYPE html>
         <div class="card-header-row">
           <div>
             <div class="card-title" style="color: #ffb300;">ℹ️ Geliştirici & Uygulama Bilgileri</div>
-            <div class="card-subtitle">Nexus LoL AutoPilot PRO • Challenger Tactical Suite</div>
+            <div class="card-subtitle">LoL AutoPilot PRO • Challenger Tactical Suite</div>
           </div>
-          <span style="background: rgba(255, 179, 0, 0.15); border: 1px solid rgba(255, 179, 0, 0.4); color: #ffb300; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;">v2.5.0 PRO</span>
+          <span id="creditsVersionBadge" style="background: rgba(0, 242, 96, 0.15); border: 1px solid rgba(0, 242, 96, 0.4); color: #00f260; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;">v1.0.0</span>
         </div>
 
         <div class="credits-grid">
@@ -1124,19 +1265,22 @@ HTML_CONTENT = r"""<!DOCTYPE html>
           </div>
 
           <div class="credits-card">
-            <span class="credits-label">💬 DISCORD İLETİŞİM</span>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span class="credits-label">💬 DISCORD TOPLULUĞU</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div class="discord-badge">
                 <svg width="18" height="14" viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
-                <span>broadday0909</span>
+                <span>discord.gg/MXXEttvfs</span>
               </div>
               <button class="copy-btn" id="copyBtn" onclick="copyDiscord()">Kopyala</button>
             </div>
           </div>
 
           <div class="credits-card">
-            <span class="credits-label">🛡️ GÜVENLİK PROTOKOLÜ</span>
-            <span class="credits-value" style="color: #00f260; font-size: 13.5px;">100% Vanguard Güvenli</span>
+            <span class="credits-label">📦 OTOMATİK GÜNCELLEME</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span id="updateStatusText" class="credits-value" style="color: #00f260; font-size: 13.5px;">v1.0.0 (En Güncel)</span>
+              <button class="copy-btn" id="btnManualCheck" onclick="manualCheckUpdates()" style="background: linear-gradient(135deg, #00f260, #0575e6);">Kontrol Et</button>
+            </div>
           </div>
 
           <div class="credits-card">
@@ -1201,6 +1345,9 @@ HTML_CONTENT = r"""<!DOCTYPE html>
       // Status polling every 2.0s
       setInterval(pollStatus, 2000);
       pollStatus();
+
+      // Check for updates in background (1.5s after launch)
+      setTimeout(() => checkForUpdates(true), 1500);
     });
 
     function updateRankedUI(ranked) {
@@ -1446,7 +1593,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
     }
 
     function copyDiscord() {
-      navigator.clipboard.writeText('broadday0909');
+      navigator.clipboard.writeText('https://discord.gg/MXXEttvfs');
       const btn = document.getElementById('copyBtn');
       btn.textContent = 'Kopyalandı! ✓';
       btn.style.background = '#00f260';
@@ -1456,6 +1603,62 @@ HTML_CONTENT = r"""<!DOCTYPE html>
         btn.style.background = '#5865F2';
         btn.style.color = '#ffffff';
       }, 2000);
+    }
+
+    let latestReleaseUrl = 'https://github.com/broadday0909/LolAutoPilot/releases';
+
+    async function checkForUpdates(silent = true) {
+      try {
+        const res = await window.pywebview.api.check_for_updates();
+        if (res && res.has_update) {
+          latestReleaseUrl = res.release_url || latestReleaseUrl;
+          const banner = document.getElementById('updateBanner');
+          const title = document.getElementById('updateBannerTitle');
+          const sub = document.getElementById('updateBannerSubtitle');
+          if (title) title.textContent = `🚀 Yeni Sürüm Mevcut! (${res.latest_version})`;
+          if (sub) sub.textContent = `Mevcut Sürüm: ${res.current_version} • Yeni özellikler ve geliştirmeler yayınlandı.`;
+          if (banner) banner.style.display = 'block';
+
+          const updateStatusText = document.getElementById('updateStatusText');
+          if (updateStatusText) {
+            updateStatusText.textContent = `⚠️ ${res.latest_version} Mevcut!`;
+            updateStatusText.style.color = '#ffb300';
+          }
+        } else {
+          if (!silent) {
+            const updateStatusText = document.getElementById('updateStatusText');
+            if (updateStatusText) {
+              updateStatusText.textContent = `✓ ${res.current_version || 'v1.0.0'} (En Güncel)`;
+              updateStatusText.style.color = '#00f260';
+            }
+            alert(`Tebrikler! En güncel sürümü (${res.current_version || 'v1.0.0'}) kullanıyorsunuz.`);
+          }
+        }
+      } catch (e) {
+        console.error('Update check failed:', e);
+      }
+    }
+
+    async function manualCheckUpdates() {
+      const btn = document.getElementById('btnManualCheck');
+      if (btn) {
+        btn.textContent = 'Kontrol Ediliyor...';
+        btn.disabled = true;
+      }
+      await checkForUpdates(false);
+      if (btn) {
+        btn.textContent = 'Kontrol Et';
+        btn.disabled = false;
+      }
+    }
+
+    function openReleasePage() {
+      window.pywebview.api.open_url(latestReleaseUrl);
+    }
+
+    function closeUpdateBanner() {
+      const banner = document.getElementById('updateBanner');
+      if (banner) banner.style.display = 'none';
     }
 
     function switchView(viewName) {
