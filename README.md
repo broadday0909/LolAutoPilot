@@ -5,6 +5,7 @@
 **League of Legends için Yeni Nesil, %100 Güvenli ve Tam Otomatik İstemci Asistanı**
 
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/MXXEttvfs)
 [![Vanguard Safe](https://img.shields.io/badge/Vanguard-100%25%20Safe-brightgreen.svg?style=for-the-badge&logo=riotgames&logoColor=white)](#-g%C3%BCvenlik--ban-riski)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![UI Engine](https://img.shields.io/badge/UI-PyWebView%20%26%20CSS3-ff69b4.svg?style=for-the-badge)](https://pywebview.flowrl.com/)
@@ -99,6 +100,16 @@ python -m PyInstaller --noconfirm --onedir --windowed \
 * **Arayüz:** PyWebView (Edge Chromium / WebView2 Engine)
 * **Tasarım:** Modern Glassmorphism, Dark Neon Cyberpunk CSS3
 * **İletişim:** Riot LCU REST API (Local HTTPS Protocol) & CommunityDragon / DDragon CDN
+
+---
+
+## 📫 İletişim & Destek (Contact & Support)
+
+Herhangi bir hata bildirimi, özellik önerisi veya destek için aşağıdaki kanallardan bize ulaşabilirsiniz:
+
+* 💬 **Discord Topluluğu:** [discord.gg/MXXEttvfs](https://discord.gg/MXXEttvfs)
+* 🐛 **Hata Bildirimi & İstekler:** [GitHub Issues](https://github.com/) sekmesinden yeni bir başlık açabilirsiniz.
+* ⭐ **Destek Olmak İçin:** Projeyi beğendiyseniz sağ üstteki **Star (Yıldız) ⭐** butonuna tıklayarak destek olabilirsiniz!
 
 ---
 
