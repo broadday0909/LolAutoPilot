@@ -13,9 +13,26 @@
 
 <br/>
 
+<p align="center">
+  <a href="../../releases/latest">
+    <img src="https://img.shields.io/badge/📥_HEMEN_İNDİR_(Download)-LoL_AutoPilot_PRO_v1.0.exe-00f260?style=for-the-badge&logo=windows&logoColor=white&labelColor=0b0f19" alt="Download LoL AutoPilot" height="45"/>
+  </a>
+</p>
+
 > **LoL AutoPilot PRO**, resmi **Riot League Client Update (LCU) REST API** protokolünü kullanarak maç kabulünden şampiyon seçimine, özel profil arka planından lig istatistiklerine kadar tüm istemci deneyiminizi tek bir modern arayüzden yönetmenizi sağlar.
 
 </div>
+
+---
+
+## 💾 Hızlı İndirme & Başlangıç (Quick Download)
+
+| Dosya | Platform | Durum | İndirme Bağlantısı |
+| :--- | :--- | :--- | :--- |
+| **LoL_AutoPilot.exe** (Son Sürüm) | Windows 10 / 11 | `Aktif & Güncel` | [📥 **Doğrudan İndir (.exe)**](../../releases/latest) |
+| **LoL_AutoPilot_v1.0.zip** (Taşınabilir) | Windows 10 / 11 | `Kurulumsuz (Portable)` | [📦 **ZIP Olarak İndir**](../../releases/latest) |
+
+*Kurulum gerektirmez! Dosyayı indirip çalıştırmanız yeterlidir.*
 
 ---
 
